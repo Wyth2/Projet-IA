@@ -126,7 +126,7 @@ streamlit run app.py
 
 L'interface sera accessible sur `http://localhost:8501`
 
-## 📖 Guide d'Utilisation
+##  Guide d'Utilisation
 
 ### 1. Conversation avec l'Agent
 
@@ -255,4 +255,5 @@ Ce projet est à des fins éducatives.
 William TRUGUET
 
 ---
+
 
