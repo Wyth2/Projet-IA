@@ -6,8 +6,9 @@ from typing import List, Dict, Any
 import json
 from PIL import Image
 from io import BytesIO
+import pandas as pd
+import altair as alt
 
-# Configuration
 API_URL = "http://localhost:8000"
 
 # Page configuration
@@ -21,7 +22,6 @@ st.set_page_config(
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-    
     * {
         font-family: 'Inter', sans-serif;
     }
@@ -31,7 +31,6 @@ st.markdown("""
         background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
         background-attachment: fixed;
     }
-    
     .block-container {
         padding: 3rem 2rem;
         background: #ffffff;
@@ -126,6 +125,10 @@ st.markdown("""
         color: #ffffff !important;
         border-left: 5px solid #2c3e50;
     }
+
+    .user-message *, .user-message b, .user-message span {
+        color: #ffffff !important;
+    }
     
     .user-message b {
         color: #ffffff !important;
@@ -139,6 +142,10 @@ st.markdown("""
         background: #ecf0f1;
         color: #2c3e50 !important;
         border-left: 5px solid #7f8c8d;
+    }
+
+    .assistant-message *, .assistant-message b, .assistant-message span {
+        color: #2c3e50 !important;
     }
     
     .assistant-message b {
@@ -256,6 +263,10 @@ st.markdown("""
         transition: all 0.3s ease;
         border: 2px solid transparent;
     }
+
+    .movie-card * {
+        color: #2c3e50 !important;
+    }
     
     .movie-card:hover {
         transform: translateY(-5px);
@@ -286,6 +297,9 @@ if "user_profile" not in st.session_state:
 
 if "show_profile_form" not in st.session_state:
     st.session_state.show_profile_form = True
+
+if "suggestion_refresh" not in st.session_state:
+    st.session_state.suggestion_refresh = 0
 
 
 def check_api_health():
@@ -467,14 +481,47 @@ if not st.session_state.user_profile:
     st.info("Créez votre profil dans la barre latérale pour commencer à recevoir des recommandations personnalisées.")
     st.stop()
 
+# Visualize user genre preferences as a pie chart
+st.subheader("Répartition de vos goûts")
+genres_pref = st.session_state.user_profile.get("genres", {}) if st.session_state.user_profile else {}
+data = [
+    {"Genre": genre.capitalize(), "Score": score}
+    for genre, score in genres_pref.items()
+    if score and score > 0
+]
+
+if data:
+    df = pd.DataFrame(data)
+    pie_chart = (
+        alt.Chart(df)
+        .mark_arc(innerRadius=40)
+        .encode(
+            theta=alt.Theta(field="Score", type="quantitative"),
+            color=alt.Color(field="Genre", type="nominal"),
+            tooltip=["Genre", "Score"],
+        )
+    )
+    st.altair_chart(pie_chart, use_container_width=True)
+else:
+    st.info("Aucune préférence renseignée pour afficher un camembert.")
+
+def _refresh_suggestions():
+    st.session_state.suggestion_refresh += 1
+    st.rerun()
+
+
 # Show profile-based suggestions
 st.title("Recommandations Personnalisées")
+
+col_refresh, col_space = st.columns([1, 5])
+with col_refresh:
+    st.button("Nouvelles suggestions", on_click=_refresh_suggestions)
 
 with st.spinner("Chargement de vos recommandations..."):
     try:
         response = requests.post(
             f"{API_URL}/suggestions",
-            json={"user_profile": st.session_state.user_profile, "k": 4},
+            json={"user_profile": st.session_state.user_profile, "k": 4, "refresh": st.session_state.suggestion_refresh},
             timeout=10
         )
         if response.ok:
@@ -543,6 +590,12 @@ with st.spinner("Chargement de vos recommandations..."):
                         st.markdown(f"<p style='color: #7f8c8d; margin: 0.25rem 0;'>Année : {movie['year']}</p>", unsafe_allow_html=True)
                         st.markdown(f"<p style='color: #f39c12; margin: 0.25rem 0; font-weight: 600;'>Note : {movie['rating']}/10</p>", unsafe_allow_html=True)
                         st.markdown(f"<p style='color: #95a5a6; margin: 0.25rem 0;'>Réalisateur : {movie['director']}</p>", unsafe_allow_html=True)
+                        match = movie.get('match_score')
+                        if match is not None:
+                            st.markdown(
+                                f"<p style='color: #2c3e50; margin: 0.25rem 0; font-weight: 600;'>Compatibilité : {match}%</p>",
+                                unsafe_allow_html=True,
+                            )
                         with st.expander("Synopsis"):
                             st.write(movie.get('description', 'Aucune description disponible'))
                         st.markdown('</div>', unsafe_allow_html=True)

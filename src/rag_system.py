@@ -7,6 +7,7 @@ from langchain_community.vectorstores import Chroma
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.language_models.llms import LLM
 import warnings
+import json
 
 from config import settings
 from src.data_processor import MovieDataProcessor
@@ -348,6 +349,7 @@ class RAGSystem:
             
             seen_ids.add(movie_id)
             self.recommended_movies.add(movie_id)
+            match_score = self._compute_match_score(user_profile, metadata)
             suggestions.append({
                 "id": movie_id,
                 "title": metadata.get("title", "Unknown"),
@@ -357,7 +359,8 @@ class RAGSystem:
                 "rating": metadata.get("rating", 0),
                 "description": doc.page_content,
                 "image_url": metadata.get("image_url", ""),
-                "local_image_path": metadata.get("local_image_path", "")
+                "local_image_path": metadata.get("local_image_path", ""),
+                "match_score": match_score
             })
             
             # Stop once we have enough unique suggestions
@@ -365,3 +368,53 @@ class RAGSystem:
                 break
         
         return suggestions
+
+    def _compute_match_score(self, user_profile: Dict[str, Any], movie_metadata: Dict[str, Any]) -> float:
+        """Compute a simple compatibility score between profile and movie genres."""
+        genres_pref = user_profile.get("genres", {}) or {}
+        if not genres_pref:
+            return 0.0
+
+        raw_movie_genres = movie_metadata.get("genre", []) or []
+        if isinstance(raw_movie_genres, str):
+            try:
+                raw_movie_genres = json.loads(raw_movie_genres)
+            except Exception:
+                raw_movie_genres = [raw_movie_genres]
+
+        synonym_map = {
+            "action": "action",
+            "adventure": "aventure",
+            "aventure": "aventure",
+            "sci-fi": "science-fiction",
+            "science fiction": "science-fiction",
+            "science-fiction": "science-fiction",
+            "sf": "science-fiction",
+            "drama": "drame",
+            "drame": "drame",
+            "comedy": "comedie",
+            "comedie": "comedie",
+            "comédie": "comedie",
+            "romance": "romantique",
+            "romantique": "romantique",
+            "animation": "animation",
+            "anime": "animation",
+            "historical": "historique",
+            "history": "historique",
+            "historique": "historique",
+            "horror": "horreur",
+            "horreur": "horreur",
+            "thriller": "horreur",  # rapproché suspense/horreur
+        }
+
+        normalized_genres = []
+        for genre in raw_movie_genres:
+            g = str(genre).lower()
+            normalized_genres.append(synonym_map.get(g, g))
+
+        score_raw = sum(genres_pref.get(g, 0) for g in normalized_genres)
+        max_possible = sum(genres_pref.values())
+        if max_possible <= 0:
+            return 0.0
+
+        return round(min(100.0, (score_raw / max_possible) * 100), 1)
