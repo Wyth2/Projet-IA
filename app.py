@@ -540,10 +540,10 @@ with st.spinner("Chargement de vos recommandations..."):
                             """, unsafe_allow_html=True)
                         
                         st.markdown(f"<h3 style='color: #34495e; margin: 1rem 0 0.5rem 0;'>{movie['title']}</h3>", unsafe_allow_html=True)
-                        st.markdown(f"<p style='color: #7f8c8d; margin: 0.25rem 0;'>📅 {movie['year']}</p>", unsafe_allow_html=True)
-                        st.markdown(f"<p style='color: #f39c12; margin: 0.25rem 0; font-weight: 600;'>⭐ {movie['rating']}/10</p>", unsafe_allow_html=True)
-                        st.markdown(f"<p style='color: #95a5a6; margin: 0.25rem 0;'>🎬 {movie['director']}</p>", unsafe_allow_html=True)
-                        with st.expander("📖 Synopsis"):
+                        st.markdown(f"<p style='color: #7f8c8d; margin: 0.25rem 0;'>Année : {movie['year']}</p>", unsafe_allow_html=True)
+                        st.markdown(f"<p style='color: #f39c12; margin: 0.25rem 0; font-weight: 600;'>Note : {movie['rating']}/10</p>", unsafe_allow_html=True)
+                        st.markdown(f"<p style='color: #95a5a6; margin: 0.25rem 0;'>Réalisateur : {movie['director']}</p>", unsafe_allow_html=True)
+                        with st.expander("Synopsis"):
                             st.write(movie.get('description', 'Aucune description disponible'))
                         st.markdown('</div>', unsafe_allow_html=True)
             else:
