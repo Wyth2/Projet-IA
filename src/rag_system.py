@@ -15,118 +15,45 @@ from src.data_processor import MovieDataProcessor
 class SimpleLLM(LLM):
     """Simple LLM for local text generation without external API."""
     
-    # Store the user's original query and profile
+    # Store the user's original query, profile and found documents
     user_query: str = ""
     user_profile: Optional[Dict[str, Any]] = None
+    found_documents: List[Any] = []
     
     @property
     def _llm_type(self) -> str:
         return "simple_local"
     
     def _call(self, prompt: str, stop: Optional[List[str]] = None) -> str:
-        """Generate a simple response based on the context."""
-        # Use the stored user query and profile
+        """Generate a simple response based on the retrieved documents."""
         question = self.user_query.lower()
-        profile = self.user_profile or {}
         
-        # Print for debugging
-        print(f"[DEBUG] Using user query: {question}")
-        print(f"[DEBUG] User profile: {profile}")
+        # If we have documents, use them to create the response
+        if self.found_documents:
+            response = "Voici mes recommandations de films pour vous :\n\n"
+            for i, doc in enumerate(self.found_documents[:5], 1):
+                metadata = doc.metadata
+                title = metadata.get('title', 'Film inconnu')
+                year = metadata.get('year', 'N/A')
+                rating = metadata.get('rating', 'N/A')
+                director = metadata.get('director', 'N/A')
+                
+                # Extract description from content
+                content = doc.page_content
+                desc_start = content.find("Description: ")
+                if desc_start != -1:
+                    desc = content[desc_start + 13:].split("\n")[0]
+                else:
+                    desc = content[:500]
+                
+                response += f"{i}. **{title}** ({year}) - Note: {rating}/10\n"
+                response += f"   Réalisé par {director}.\n"
+                response += f"   {desc}\n\n"
+            
+            return response.strip()
         
-        # Get genre preferences from profile
-        genre_prefs = profile.get("genres", {})
-        top_genres = sorted(genre_prefs.items(), key=lambda x: x[1], reverse=True)[:2] if genre_prefs else []
-        
-        # Build personalized prefix
-        profile_context = ""
-        if top_genres:
-            genres_str = " et ".join([g[0] for g in top_genres])
-            profile_context = f"Basé sur votre profil (vous aimez : {genres_str}), "
-        
-        # Check for different genres in the question only - be more specific
-        if any(word in question for word in ["animation", "animé", "dessin animé", "cartoon", "pixar", "disney"]):
-            return f"""{profile_context}Voici d'excellents films d'animation :
-
-1. **Spirited Away** (2001) - Note: 8.6/10
-   Réalisé par Hayao Miyazaki. Un chef-d'œuvre du Studio Ghibli sur une jeune fille dans un monde magique.
-
-2. **Toy Story** (1995) - Note: 8.3/10
-   Réalisé par Pixar. Le premier long-métrage d'animation entièrement en images de synthèse.
-
-3. **The Lion King** (1994) - Note: 8.5/10
-   Classique Disney sur un jeune lion destiné à devenir roi.
-
-Ces films sont parfaits pour tous les âges et offrent des histoires touchantes avec des visuels magnifiques !"""
-        
-        elif any(word in question for word in ["science-fiction", "sci-fi", "science fiction", "futur", "espace", "spatial"]):
-            return """Je vous recommande ces excellents films de science-fiction :
-
-1. **Inception** (2010) - Note: 8.8/10
-   Réalisé par Christopher Nolan, avec Leonardo DiCaprio. Un thriller de science-fiction captivant sur le vol d'idées dans les rêves.
-
-2. **The Matrix** (1999) - Note: 8.7/10
-   Réalisé par les Wachowski, avec Keanu Reeves. Un film révolutionnaire sur la réalité virtuelle et la nature de notre existence.
-
-3. **Interstellar** (2014) - Note: 8.6/10
-   Réalisé par Christopher Nolan, avec Matthew McConaughey. Une épopée spatiale sur la survie de l'humanité.
-
-Ces films sont parfaits si vous aimez les concepts complexes et les effets visuels époustouflants !"""
-        
-        elif any(word in question for word in ["action", "combat", "aventure", "super-héros", "superhero"]):
-            return """Voici d'excellents films d'action :
-
-1. **The Dark Knight** (2008) - Note: 9.0/10
-   Avec Christian Bale et Heath Ledger. Un chef-d'œuvre du genre super-héros.
-
-2. **Gladiator** (2000) - Note: 8.5/10
-   Avec Russell Crowe. Une épopée historique pleine d'action et d'émotion.
-
-Ces films offrent des scènes d'action mémorables et des histoires captivantes !"""
-        
-        elif any(word in question for word in ["drame", "drama", "dramatique", "émotion", "touchant"]):
-            return """Je recommande ces drames puissants :
-
-1. **The Shawshank Redemption** (1994) - Note: 9.3/10
-   Avec Tim Robbins et Morgan Freeman. Une histoire d'espoir et de rédemption.
-
-2. **The Godfather** (1972) - Note: 9.2/10
-   Avec Marlon Brando et Al Pacino. Le film de mafia par excellence.
-
-3. **Forrest Gump** (1994) - Note: 8.8/10
-   Avec Tom Hanks. Un voyage émouvant à travers l'histoire américaine."""
-        
-        elif any(word in question for word in ["comédie", "comedy", "drôle", "rire", "humour"]):
-            return """Voici d'excellentes comédies :
-
-1. **Forrest Gump** (1994) - Note: 8.8/10
-   Avec Tom Hanks. Mélange parfait d'humour et d'émotion.
-
-2. **The Grand Budapest Hotel** (2014) - Note: 8.1/10
-   Comédie décalée de Wes Anderson.
-
-Ces films vous feront passer un excellent moment !"""
-        
-        elif any(word in question for word in ["horreur", "horror", "peur", "effrayant", "terreur"]):
-            return """Pour les films d'horreur, je vous recommande :
-
-1. **Get Out** (2017) - Note: 7.7/10
-   Thriller horrifique social et intelligent.
-
-2. **The Silence of the Lambs** (1991) - Note: 8.6/10
-   Thriller psychologique intense avec Anthony Hopkins.
-
-Ces films sont captivants et angoissants !"""
-        
-        else:
-            return """Voici quelques excellents films que je vous recommande :
-
-1. **The Shawshank Redemption** (1994) - Note: 9.3/10 - Un drame inspirant
-2. **The Godfather** (1972) - Note: 9.2/10 - Le film de mafia classique
-3. **The Dark Knight** (2008) - Note: 9.0/10 - Action et super-héros
-4. **Inception** (2010) - Note: 8.8/10 - Science-fiction complexe
-5. **Parasite** (2019) - Note: 8.6/10 - Thriller social coréen
-
-Tous ces films sont très bien notés et offrent des expériences cinématographiques uniques !"""
+        # Fallback if no documents
+        return "Désolé, je n'ai pas trouvé de films correspondants à votre recherche."
 
 
 class RAGSystem:
@@ -149,6 +76,7 @@ class RAGSystem:
         self.vectorstore = None
         self.conversation_chain = None
         self.chat_history = []  # Simple list to store conversation history
+        self.recommended_movies = set()  # Track recommended movie IDs
         
     def initialize_vectorstore(self):
         """Initialize and populate the vector database."""
@@ -210,8 +138,40 @@ class RAGSystem:
         self.llm.user_profile = user_profile
         
         try:
-            # Get relevant documents
-            docs = self.vectorstore.similarity_search(query, k=settings.top_k_results)
+            # Extract genre keywords from query
+            genre_keywords = self._extract_genre_from_query(query)
+            
+            # Get relevant documents - request more to filter out already recommended
+            docs = self.vectorstore.similarity_search(query, k=settings.top_k_results * 10)
+            
+            # Filter by genre if specified, and exclude already recommended
+            filtered_docs = []
+            for doc in docs:
+                movie_id = doc.metadata.get("id")
+                if movie_id in self.recommended_movies:
+                    continue
+                    
+                # If genre specified, check if movie matches
+                if genre_keywords:
+                    movie_genres = doc.metadata.get("genre", "[]")
+                    import json
+                    try:
+                        genres_list = json.loads(movie_genres) if isinstance(movie_genres, str) else movie_genres
+                        genres_lower = [g.lower() for g in genres_list]
+                        
+                        # Check if any requested genre matches movie genres
+                        if not any(keyword in genre for genre in genres_lower for keyword in genre_keywords):
+                            continue
+                    except:
+                        pass
+                
+                filtered_docs.append(doc)
+                self.recommended_movies.add(movie_id)
+                if len(filtered_docs) >= settings.top_k_results:
+                    break
+            
+            # Pass documents to LLM
+            self.llm.found_documents = filtered_docs
             
             # Use LLM to generate response
             answer = self.llm._call("")
@@ -226,7 +186,7 @@ class RAGSystem:
                         "content": doc.page_content,
                         "metadata": doc.metadata
                     }
-                    for doc in docs
+                    for doc in filtered_docs
                 ]
             }
         except Exception as e:
@@ -249,31 +209,78 @@ class RAGSystem:
         if self.vectorstore is None:
             self.load_vectorstore()
         
-        # Request more results to account for potential duplicates
-        results = self.vectorstore.similarity_search(query, k=k*3)
+        # Extract genre keywords from query
+        genre_keywords = self._extract_genre_from_query(query)
         
-        # Deduplicate by movie ID
+        # Request more results to account for potential duplicates and already recommended
+        results = self.vectorstore.similarity_search(query, k=k*10)
+        
+        # Deduplicate by movie ID, filter by genre, and exclude already recommended
         seen_ids = set()
         unique_results = []
         
         for doc in results:
             movie_id = doc.metadata.get("id")
-            if movie_id not in seen_ids:
-                seen_ids.add(movie_id)
-                unique_results.append({
-                    "content": doc.page_content,
-                    "metadata": doc.metadata
-                })
-                
-                if len(unique_results) >= k:
-                    break
+            if movie_id in seen_ids or movie_id in self.recommended_movies:
+                continue
+            
+            # If genre specified, check if movie matches
+            if genre_keywords:
+                movie_genres = doc.metadata.get("genre", "[]")
+                import json
+                try:
+                    genres_list = json.loads(movie_genres) if isinstance(movie_genres, str) else movie_genres
+                    genres_lower = [g.lower() for g in genres_list]
+                    
+                    # Check if any requested genre matches movie genres
+                    if not any(keyword in genre for genre in genres_lower for keyword in genre_keywords):
+                        continue
+                except:
+                    pass
+            
+            seen_ids.add(movie_id)
+            self.recommended_movies.add(movie_id)
+            unique_results.append({
+                "content": doc.page_content,
+                "metadata": doc.metadata
+            })
+            
+            if len(unique_results) >= k:
+                break
         
         return unique_results
+    
+    def _extract_genre_from_query(self, query: str) -> List[str]:
+        """Extract genre keywords from user query."""
+        query_lower = query.lower()
+        genre_map = {
+            "action": ["action"],
+            "aventure": ["adventure", "aventure"],
+            "comédie": ["comedy", "comedie", "comédie"],
+            "drame": ["drama", "drame"],
+            "horreur": ["horror", "horreur", "épouvante"],
+            "science-fiction": ["sci-fi", "science fiction", "science-fiction", "sf"],
+            "thriller": ["thriller", "suspense"],
+            "romance": ["romance", "romantique"],
+            "fantastique": ["fantasy", "fantastique"],
+            "animation": ["animation", "animé"],
+            "crime": ["crime", "policier"],
+            "guerre": ["war", "guerre"],
+            "western": ["western"]
+        }
+        
+        found_genres = []
+        for genre, keywords in genre_map.items():
+            if any(keyword in query_lower for keyword in keywords):
+                found_genres.append(genre)
+        
+        return found_genres
     
     def reset_conversation(self):
         """Reset the conversation history."""
         self.chat_history = []
-        print("Conversation history cleared")
+        self.recommended_movies.clear()
+        print("Conversation history and recommended movies cleared")
     
     def get_profile_suggestions(self, user_profile: Dict[str, Any], k: int = 4) -> List[Dict[str, Any]]:
         """
@@ -307,10 +314,13 @@ class RAGSystem:
         
         query = " ".join(query_parts)
         
-        # Search for similar movies - request more to account for duplicates
-        results = self.vectorstore.similarity_search(query, k=k*3)
+        # Extract genre keywords from query
+        genre_keywords = self._extract_genre_from_query(query)
         
-        # Deduplicate by movie ID
+        # Search for similar movies - request more to account for duplicates and already recommended
+        results = self.vectorstore.similarity_search(query, k=k*10)
+        
+        # Deduplicate by movie ID, filter by genre, and exclude already recommended
         seen_ids = set()
         suggestions = []
         
@@ -318,11 +328,26 @@ class RAGSystem:
             metadata = doc.metadata
             movie_id = metadata.get("id")
             
-            # Skip if we've already added this movie
-            if movie_id in seen_ids:
+            # Skip if we've already added this movie or it was recommended before
+            if movie_id in seen_ids or movie_id in self.recommended_movies:
                 continue
             
+            # If genre specified, check if movie matches
+            if genre_keywords:
+                movie_genres = metadata.get("genre", "[]")
+                import json
+                try:
+                    genres_list = json.loads(movie_genres) if isinstance(movie_genres, str) else movie_genres
+                    genres_lower = [g.lower() for g in genres_list]
+                    
+                    # Check if any requested genre matches movie genres
+                    if not any(keyword in genre for genre in genres_lower for keyword in genre_keywords):
+                        continue
+                except:
+                    pass
+            
             seen_ids.add(movie_id)
+            self.recommended_movies.add(movie_id)
             suggestions.append({
                 "id": movie_id,
                 "title": metadata.get("title", "Unknown"),
