@@ -1,4 +1,4 @@
-# 🎬 Agent Intelligent Sémantique et Génératif
+#  Agent Intelligent Sémantique et Génératif
 
 ## Système de Recommandations de Films avec RAG
 
@@ -12,7 +12,7 @@
 
 ---
 
-## ⚡ Démarrage Ultra-Rapide
+##  Démarrage Ultra-Rapide
 
 ```bash
 # 1. Configurer votre clé OpenAI dans .env
@@ -28,17 +28,17 @@ streamlit run app.py       # Terminal 2
 # 4. Ouvrir → http://localhost:8501
 ```
 
-**📖 Plus de détails ?** → [START.md](START.md) ou [QUICKSTART.md](QUICKSTART.md)
+** Plus de détails ?** → [START.md](START.md) ou [QUICKSTART.md](QUICKSTART.md)
 
 ---
 
-## 🎬 Agent Intelligent Sémantique et Génératif
+##  Agent Intelligent Sémantique et Génératif
 
 ## Système de Recommandations de Films avec RAG
 
 Ce projet implémente un agent conversationnel intelligent utilisant la technologie RAG (Retrieval Augmented Generation) pour fournir des recommandations de films personnalisées et contextuelles.
 
-## 🚀 Fonctionnalités
+##  Fonctionnalités
 
 - **Recherche Sémantique**: Recherche de films basée sur la similarité sémantique
 - **Conversation Contextuelle**: Agent conversationnel avec mémoire
@@ -46,7 +46,7 @@ Ce projet implémente un agent conversationnel intelligent utilisant la technolo
 - **Interface Intuitive**: Interface web moderne avec Streamlit
 - **API REST**: Backend FastAPI pour l'intégration
 
-## 📋 Architecture
+##  Architecture
 
 ```
 ├── src/
@@ -60,7 +60,7 @@ Ce projet implémente un agent conversationnel intelligent utilisant la technolo
 └── README.md                 # Ce fichier
 ```
 
-## 🛠️ Technologies Utilisées
+##  Technologies Utilisées
 
 - **LangChain**: Orchestration du système RAG
 - **OpenAI**: Embeddings et génération de texte
@@ -69,7 +69,7 @@ Ce projet implémente un agent conversationnel intelligent utilisant la technolo
 - **Streamlit**: Interface utilisateur
 - **Python 3.10+**: Langage de programmation
 
-## 📦 Installation
+##  Installation
 
 ### 1. Cloner le projet
 
@@ -104,7 +104,7 @@ Modifiez le fichier `.env`:
 OPENAI_API_KEY=votre_clé_api_openai_ici
 ```
 
-## 🚀 Utilisation
+##  Utilisation
 
 ### Démarrer le Backend (API)
 
@@ -162,14 +162,14 @@ curl -X POST "http://localhost:8000/search" \
   -d '{"query": "films d action", "k": 5}'
 ```
 
-## 🎯 Fonctionnement du Système RAG
+##  Fonctionnement du Système RAG
 
 1. **Indexation**: Les films sont convertis en embeddings vectoriels et stockés dans ChromaDB
 2. **Recherche**: Lors d'une question, le système trouve les films les plus similaires
 3. **Génération**: GPT-3.5 génère une réponse contextuelle basée sur les films trouvés
 4. **Mémoire**: L'historique de conversation est maintenu pour un dialogue cohérent
 
-## 📊 Données
+##  Données
 
 Le système inclut 12 films populaires pour la démonstration:
 - The Shawshank Redemption
@@ -189,7 +189,7 @@ Le système inclut 12 films populaires pour la démonstration:
 
 Modifiez `src/data_processor.py` et ajoutez vos films dans la méthode `load_sample_movies()`.
 
-## 🔧 Configuration Avancée
+##  Configuration Avancée
 
 ### Paramètres du Modèle (config.py)
 
@@ -201,7 +201,7 @@ max_tokens = 500                            # Longueur maximale
 top_k_results = 5                           # Nombre de résultats RAG
 ```
 
-## 📝 Endpoints API
+##  Endpoints API
 
 - `GET /` - Information sur l'API
 - `GET /health` - Vérification de l'état
@@ -210,7 +210,7 @@ top_k_results = 5                           # Nombre de résultats RAG
 - `POST /reset` - Réinitialiser la conversation
 - `POST /initialize` - Réinitialiser la base vectorielle
 
-## 🐛 Dépannage
+##  Dépannage
 
 ### L'API ne démarre pas
 
@@ -227,7 +227,7 @@ top_k_results = 5                           # Nombre de résultats RAG
 - Vérifiez l'activation de l'environnement virtuel
 - Réinstallez les dépendances: `pip install -r requirements.txt`
 
-## 📚 Ressources
+##  Ressources
 
 - [LangChain Documentation](https://python.langchain.com/)
 - [OpenAI API Reference](https://platform.openai.com/docs)
@@ -235,7 +235,7 @@ top_k_results = 5                           # Nombre de résultats RAG
 - [FastAPI Documentation](https://fastapi.tiangolo.com/)
 - [Streamlit Documentation](https://docs.streamlit.io/)
 
-## 🎓 Projet Académique
+##  Projet Académique
 
 Ce projet a été développé dans le cadre du cours d'IA Générative - Agent Intelligent Sémantique et Génératif (2026).
 
@@ -246,14 +246,13 @@ Ce projet a été développé dans le cadre du cours d'IA Générative - Agent I
 - Créer un agent conversationnel contextuel
 - Développer une application full-stack avec IA
 
-## 📄 Licence
+##  Licence
 
 Ce projet est à des fins éducatives.
 
-## 👥 Auteur
+##  Auteur
 
-Projet DATA IA - 2026
+William TRUGUET
 
 ---
 
-**Note**: Assurez-vous d'avoir une clé API OpenAI valide et des crédits disponibles pour utiliser ce projet.
